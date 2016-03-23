@@ -29,17 +29,18 @@ enum MWTPrintModuleError: ErrorType {
 
 // MARK: - MWTPageSize struct
 
-let MWTPrintModuleBasePrintableMargin: CGFloat = CGFloat(36.0)
+let SFA4PrintModuleBasePrintableMarginTopBottom: CGFloat = CGFloat(36.0)
+let SFA4PrintModuleBasePrintableMarginLeftRight: CGFloat = CGFloat(20.0)
 
 struct MWTPageSize {
     let width: CGFloat
     let height: CGFloat
     
     // Print margins
-    var topMargin: CGFloat = MWTPrintModuleBasePrintableMargin
-    var rightMargin: CGFloat = MWTPrintModuleBasePrintableMargin
-    var bottomMargin: CGFloat = MWTPrintModuleBasePrintableMargin
-    var leftMargin: CGFloat = MWTPrintModuleBasePrintableMargin
+    var topMargin: CGFloat = SFA4PrintModuleBasePrintableMarginTopBottom
+    var rightMargin: CGFloat = SFA4PrintModuleBasePrintableMarginLeftRight
+    var bottomMargin: CGFloat = SFA4PrintModuleBasePrintableMarginTopBottom
+    var leftMargin: CGFloat = SFA4PrintModuleBasePrintableMarginLeftRight
     
     // Init
     
@@ -179,8 +180,8 @@ class MWTPrintModule: NSObject {
     // MARK: --- Accessory pages
     
     // Draw front page
-    func drawFrontPage() throws {
-        guard delegate != nil else { throw MWTPrintModuleError.DelegateIsMissing }
+    func drawFrontPage(compact: Bool) throws {
+        guard delegate != nil else { throw SFA4PrintModuleError.DelegateIsMissing }
         
         printJobDetails.currentPosition = printJobDetails.pageOrigin
         printJobDetails.currentRowPosition = printJobDetails.rowOrigin
@@ -188,24 +189,53 @@ class MWTPrintModule: NSObject {
         UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
         self.delegate?.drawFrontPage(self, printablePageDetails: printablePageDetails)
         
-        printJobDetails.currentPage++
-        printJobDetails.currentPosition = printJobDetails.pageOrigin
+        if !compact {
+            printJobDetails.currentPage++
+            printJobDetails.currentPosition = printJobDetails.pageOrigin
+        }
+        
         printJobDetails.currentRowPosition = printJobDetails.rowOrigin
     }
     
     // Draw summary page
-    func drawSummaryPage() throws {
-        guard delegate != nil else { throw MWTPrintModuleError.DelegateIsMissing }
+    func drawSummaryPage(compact: Bool) throws {
+        guard delegate != nil else { throw SFA4PrintModuleError.DelegateIsMissing }
         
+        if !compact {
+            printJobDetails.currentPosition = printJobDetails.pageOrigin
+            
+            UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
+            self.delegate?.drawSummaryPage(self, printablePageDetails: printablePageDetails)
+            
+            printJobDetails.currentPage++
+            printJobDetails.currentPosition = printJobDetails.pageOrigin
+            printJobDetails.currentRowPosition = printJobDetails.rowOrigin
+            
+            return
+        }
+        
+        // compact mode
+        let currentCellHeight: CGFloat
+        let currentSpacing: CGFloat
+        
+        if let datasourceObj = self.datasource {
+            currentCellHeight = datasourceObj.tableReportCellHeight(self)
+            currentSpacing = datasourceObj.tableReportItemSpacing(self)
+        } else {
+            currentCellHeight = self.tableItemCellHeight
+            currentSpacing = self.tableItemSpacing
+        }
+        
+        self.printJobDetails.currentPosition += currentCellHeight + currentSpacing
+        self.delegate?.drawSummaryPage(self, printablePageDetails: printablePageDetails)
+    }
+    
+    func addPage() {
+        printJobDetails.currentPage++
         printJobDetails.currentPosition = printJobDetails.pageOrigin
         printJobDetails.currentRowPosition = printJobDetails.rowOrigin
         
         UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
-        self.delegate?.drawSummaryPage(self, printablePageDetails: printablePageDetails)
-        
-        printJobDetails.currentPage++
-        printJobDetails.currentPosition = printJobDetails.pageOrigin
-        printJobDetails.currentRowPosition = printJobDetails.rowOrigin
     }
     
     // MARK: --- Table report formatting
@@ -271,19 +301,23 @@ class MWTPrintModule: NSObject {
     }
     
     // Set context on new empty page to start drawing table report and draw table header
-    func beginTableReport() throws {
-        guard delegate != nil else { throw MWTPrintModuleError.DelegateIsMissing }
+    func beginTableReport(compact: Bool) throws {
+        guard delegate != nil else { throw SFA4PrintModuleError.DelegateIsMissing }
         
-        UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
+        if !compact {
+            UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
+        }
         
         do {
             try self.drawReportTableHeader()
             
-        } catch MWTPrintModuleError.DelegateIsMissing {
-            throw MWTPrintModuleError.DelegateIsMissing
+        } catch SFA4PrintModuleError.DelegateIsMissing {
+            print("DelegateIsMissing")
+            throw SFA4PrintModuleError.DelegateIsMissing
             
         } catch let error1 {
-            throw MWTPrintModuleError.GenericError
+            print(error1)
+            throw SFA4PrintModuleError.GenericError
         }
     }
     
