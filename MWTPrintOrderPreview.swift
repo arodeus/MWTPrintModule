@@ -42,56 +42,56 @@ class MWTPrintOrderPreview: NSObject, MWTPrintModuleDelegate, MWTPrintModuleData
             }
         }
         
-		// Enable delegate to draw custom contents
-		printContext.delegate = self
+	// Enable delegate to draw custom contents
+	printContext.delegate = self
+	
+	// Enable datasource to customize cell height, header height, spacing
+	printContext.datasource = self
+	
+	self.filePath = documentDir + orderObj.orderSessionId + dateAsString + ".pdf"
+	if fm.fileExistsAtPath(filePath) {
+		return filePath
+	}
+	
+	do {
+		// Open PDF context to file
+		let contextOpened = try printContext.beginContextWithFileName(filePath)
+		if !contextOpened {
+			throw MWTPrintOrderPreviewError.PDFContextOpeningError
+		}
+	} catch _ {
+		throw MWTPrintOrderPreviewError.PDFContectGenericError
+	}
+	
+	do {
+		// Set table header fields
+		printContext.setCustomTableHeaderTitles(kTableHeaderTitles)
 		
-		// Enable datasource to customize cell height, header height, spacing
-		printContext.datasource = self
+		// Table header should be present on each table page
+		printContext.toggleTableHeaderShouldShowInEveyPage(true)
 		
-		self.filePath = documentDir + orderObj.orderSessionId + dateAsString + ".pdf"
-		if fm.fileExistsAtPath(filePath) {
-			return filePath
+		// Draw front page): if you use it, you must implement related protocol function
+		try printContext.drawFrontPage(false)
+		
+		// Draw order list
+		try printContext.beginTableReport(false)
+		
+		// Process order rows to create PDF here
+		for orderRowObject in orderRowsData! {
+			try printContext.drawReportData(rowData)
 		}
 		
-		do {
-			// Open PDF context to file
-			let contextOpened = try printContext.beginContextWithFileName(filePath)
-			if !contextOpened {
-				throw MWTPrintOrderPreviewError.PDFContextOpeningError
-			}
-		} catch _ {
-			throw MWTPrintOrderPreviewError.PDFContectGenericError
-		}
+		// Draw summary page: if you use it, you must implement related protocol function
+		try printContext.drawSummaryPage(false)
 		
-		do {
-			// Set table header fields
-			printContext.setCustomTableHeaderTitles(kTableHeaderTitles)
-			
-			// Table header should be present on each table page
-			printContext.toggleTableHeaderShouldShowInEveyPage(true)
-			
-			// Draw front page): if you use it, you must implement related protocol function
-			try printContext.drawFrontPage(false)
-			
-			// Draw order list
-			try printContext.beginTableReport(false)
-			
-			// Process order rows to create PDF here
-			for orderRowObject in orderRowsData! {
-				try printContext.drawReportData(rowData)
-			}
-			
-			// Draw summary page: if you use it, you must implement related protocol function
-			try printContext.drawSummaryPage(false)
-			
-		} catch let pdfError {
-			self.filePath = ""
-		}
-		
-		// Close PDF context
-		printContext.closeContext()
-		
-		// Return NIL Object if error occurred
+	} catch let pdfError {
+		self.filePath = ""
+	}
+	
+	// Close PDF context
+	printContext.closeContext()
+	
+	// Return NIL Object if error occurred
         if filePath.isEmpty { throw MWTPrintOrderPreviewError.PDFContectGenericError }
         
         // Return generated PDF file
