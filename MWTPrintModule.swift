@@ -190,7 +190,7 @@ class MWTPrintModule: NSObject {
         self.delegate?.drawFrontPage(self, printablePageDetails: printablePageDetails)
         
         if !compact {
-            printJobDetails.currentPage++
+            printJobDetails.currentPage += 1
             printJobDetails.currentPosition = printJobDetails.pageOrigin
         }
         
@@ -207,7 +207,7 @@ class MWTPrintModule: NSObject {
             UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
             self.delegate?.drawSummaryPage(self, printablePageDetails: printablePageDetails)
             
-            printJobDetails.currentPage++
+            printJobDetails.currentPage += 1
             printJobDetails.currentPosition = printJobDetails.pageOrigin
             printJobDetails.currentRowPosition = printJobDetails.rowOrigin
             
@@ -231,7 +231,7 @@ class MWTPrintModule: NSObject {
     }
     
     func addPage() {
-        printJobDetails.currentPage++
+        printJobDetails.currentPage += 1
         printJobDetails.currentPosition = printJobDetails.pageOrigin
         printJobDetails.currentRowPosition = printJobDetails.rowOrigin
         
@@ -343,7 +343,7 @@ class MWTPrintModule: NSObject {
             // Add new page if bottom margin reached
             if (printJobDetails.currentPosition + currentCellHeight + currentSpacing) > (printablePageDetails.height - printablePageDetails.bottomMargin) {
                 UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
-                printJobDetails.currentPage++
+                printJobDetails.currentPage += 1
                 printJobDetails.currentPosition = printJobDetails.pageOrigin
                 printJobDetails.currentRowPosition = printJobDetails.rowOrigin
                 
