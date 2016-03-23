@@ -71,10 +71,10 @@ class MWTPrintOrderPreview: NSObject, MWTPrintModuleDelegate, MWTPrintModuleData
 			printContext.toggleTableHeaderShouldShowInEveyPage(true)
 			
 			// Draw front page): if you use it, you must implement related protocol function
-			try printContext.drawFrontPage()
+			try printContext.drawFrontPage(false)
 			
 			// Draw order list
-			try printContext.beginTableReport()
+			try printContext.beginTableReport(false)
 			
 			// Process order rows to create PDF here
 			for orderRowObject in orderRowsData! {
@@ -82,7 +82,7 @@ class MWTPrintOrderPreview: NSObject, MWTPrintModuleDelegate, MWTPrintModuleData
 			}
 			
 			// Draw summary page: if you use it, you must implement related protocol function
-			try printContext.drawSummaryPage()
+			try printContext.drawSummaryPage(false)
 			
 		} catch let pdfError {
 			self.filePath = ""
