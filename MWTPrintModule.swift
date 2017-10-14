@@ -19,7 +19,7 @@ let kTableColumnSpacing = CGFloat(20.0);
 
 // MARK: - MWTPrintModuleError struct
 
-enum MWTPrintModuleError: ErrorType {
+enum MWTPrintModuleError: Error {
     case FileNameNULLOrEmpty
     case DelegateIsMissing
     case HeaderTitlesAreMissing
@@ -163,7 +163,7 @@ class MWTPrintModule: NSObject {
     // Open PDF Context
     func beginContextWithFileName(fileName: String?) throws -> Bool {
         if let pdfFileName = fileName {
-            self.contextIsOpen = UIGraphicsBeginPDFContextToFile(pdfFileName, CGRectZero, nil);
+            self.contextIsOpen = UIGraphicsBeginPDFContextToFile(pdfFileName, CGRect.zero, nil);
             return contextIsOpen
             
         } else {
@@ -181,13 +181,13 @@ class MWTPrintModule: NSObject {
     
     // Draw front page
     func drawFrontPage(compact: Bool) throws {
-        guard delegate != nil else { throw SFA4PrintModuleError.DelegateIsMissing }
+        guard delegate != nil else { throw MWTPrintModuleError.DelegateIsMissing }
         
         printJobDetails.currentPosition = printJobDetails.pageOrigin
         printJobDetails.currentRowPosition = printJobDetails.rowOrigin
         
-        UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
-        self.delegate?.drawFrontPage(self, printablePageDetails: printablePageDetails)
+        UIGraphicsBeginPDFPageWithInfo(CGRect(x: 0.0, y: 0.0, width: printablePageDetails.width, height: printablePageDetails.height), nil)
+        self.delegate?.drawFrontPage(printModule: self, printablePageDetails: printablePageDetails)
         
         if !compact {
             printJobDetails.currentPage += 1
@@ -199,13 +199,13 @@ class MWTPrintModule: NSObject {
     
     // Draw summary page
     func drawSummaryPage(compact: Bool) throws {
-        guard delegate != nil else { throw SFA4PrintModuleError.DelegateIsMissing }
+        guard delegate != nil else { throw MWTPrintModuleError.DelegateIsMissing }
         
         if !compact {
             printJobDetails.currentPosition = printJobDetails.pageOrigin
             
-            UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
-            self.delegate?.drawSummaryPage(self, printablePageDetails: printablePageDetails)
+            UIGraphicsBeginPDFPageWithInfo(CGRect(x: 0.0, y: 0.0, width: printablePageDetails.width, height: printablePageDetails.height), nil)
+            self.delegate?.drawSummaryPage(printModule: self, printablePageDetails: printablePageDetails)
             
             printJobDetails.currentPage += 1
             printJobDetails.currentPosition = printJobDetails.pageOrigin
@@ -219,15 +219,15 @@ class MWTPrintModule: NSObject {
         let currentSpacing: CGFloat
         
         if let datasourceObj = self.datasource {
-            currentCellHeight = datasourceObj.tableReportCellHeight(self)
-            currentSpacing = datasourceObj.tableReportItemSpacing(self)
+            currentCellHeight = datasourceObj.tableReportCellHeight(printModule: self)
+            currentSpacing = datasourceObj.tableReportItemSpacing(printModule: self)
         } else {
             currentCellHeight = self.tableItemCellHeight
             currentSpacing = self.tableItemSpacing
         }
         
         self.printJobDetails.currentPosition += currentCellHeight + currentSpacing
-        self.delegate?.drawSummaryPage(self, printablePageDetails: printablePageDetails)
+        self.delegate?.drawSummaryPage(printModule: self, printablePageDetails: printablePageDetails)
     }
     
     func addPage() {
@@ -235,7 +235,7 @@ class MWTPrintModule: NSObject {
         printJobDetails.currentPosition = printJobDetails.pageOrigin
         printJobDetails.currentRowPosition = printJobDetails.rowOrigin
         
-        UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
+        UIGraphicsBeginPDFPageWithInfo(CGRect(x: 0.0, y: 0.0, width: printablePageDetails.width, height: printablePageDetails.height), nil)
     }
     
     // MARK: --- Table report formatting
@@ -244,7 +244,7 @@ class MWTPrintModule: NSObject {
         let currentCellHeight: CGFloat
         
         if let datasourceObj = self.datasource {
-            currentCellHeight = datasourceObj.tableReportCellHeight(self)
+            currentCellHeight = datasourceObj.tableReportCellHeight(printModule: self)
         } else {
             currentCellHeight = self.tableItemCellHeight
         }
@@ -256,7 +256,7 @@ class MWTPrintModule: NSObject {
         let currentHeaderHeight: CGFloat
         
         if let datasourceObj = self.datasource {
-            currentHeaderHeight = datasourceObj.tableReportHeaderHeight(self)
+            currentHeaderHeight = datasourceObj.tableReportHeaderHeight(printModule: self)
         } else {
             currentHeaderHeight = self.tableItemHeaderHeight
         }
@@ -283,9 +283,9 @@ class MWTPrintModule: NSObject {
         let currentHeaderHeight: CGFloat
         
         if let datasourceObj = self.datasource {
-            currentColumnSpacing = datasourceObj.tableReportColumnSpacing(self)
-            currentSpacing = datasourceObj.tableReportItemSpacing(self)
-            currentHeaderHeight = datasourceObj.tableReportHeaderHeight(self)
+            currentColumnSpacing = datasourceObj.tableReportColumnSpacing(printModule: self)
+            currentSpacing = datasourceObj.tableReportItemSpacing(printModule: self)
+            currentHeaderHeight = datasourceObj.tableReportHeaderHeight(printModule: self)
         } else {
             currentColumnSpacing = self.tableColumnSpacing
             currentSpacing = self.tableItemSpacing
@@ -293,7 +293,7 @@ class MWTPrintModule: NSObject {
         }
         
         if let headerItems = self.tableHeaderTitles {
-            self.delegate?.drawTableHeader(self, headerHeight: currentHeaderHeight, headerItems: headerItems, pageSize: printablePageDetails, columnSpacing: currentColumnSpacing)
+            self.delegate?.drawTableHeader(printModule: self, headerHeight: currentHeaderHeight, headerItems: headerItems, pageSize: printablePageDetails, columnSpacing: currentColumnSpacing)
         }
         
         printJobDetails.currentPosition += currentHeaderHeight + currentSpacing
@@ -302,22 +302,22 @@ class MWTPrintModule: NSObject {
     
     // Set context on new empty page to start drawing table report and draw table header
     func beginTableReport(compact: Bool) throws {
-        guard delegate != nil else { throw SFA4PrintModuleError.DelegateIsMissing }
+        guard delegate != nil else { throw MWTPrintModuleError.DelegateIsMissing }
         
         if !compact {
-            UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
+            UIGraphicsBeginPDFPageWithInfo(CGRect(x: 0.0, y: 0.0, width: printablePageDetails.width, height: printablePageDetails.height), nil)
         }
         
         do {
             try self.drawReportTableHeader()
             
-        } catch SFA4PrintModuleError.DelegateIsMissing {
+        } catch MWTPrintModuleError.DelegateIsMissing {
             print("DelegateIsMissing")
-            throw SFA4PrintModuleError.DelegateIsMissing
+            throw MWTPrintModuleError.DelegateIsMissing
             
         } catch let error1 {
             print(error1)
-            throw SFA4PrintModuleError.GenericError
+            throw MWTPrintModuleError.GenericError
         }
     }
     
@@ -331,9 +331,9 @@ class MWTPrintModule: NSObject {
             let currentColumnSpacing: CGFloat
             
             if let datasourceObj = self.datasource {
-                currentCellHeight = datasourceObj.tableReportCellHeight(self)
-                currentSpacing = datasourceObj.tableReportItemSpacing(self)
-                currentColumnSpacing = datasourceObj.tableReportColumnSpacing(self)
+                currentCellHeight = datasourceObj.tableReportCellHeight(printModule: self)
+                currentSpacing = datasourceObj.tableReportItemSpacing(printModule: self)
+                currentColumnSpacing = datasourceObj.tableReportColumnSpacing(printModule: self)
             } else {
                 currentCellHeight = self.tableItemCellHeight
                 currentSpacing = self.tableItemSpacing
@@ -342,7 +342,7 @@ class MWTPrintModule: NSObject {
             
             // Add new page if bottom margin reached
             if (printJobDetails.currentPosition + currentCellHeight + currentSpacing) > (printablePageDetails.height - printablePageDetails.bottomMargin) {
-                UIGraphicsBeginPDFPageWithInfo(CGRectMake(0, 0, printablePageDetails.width, printablePageDetails.height), nil)
+                UIGraphicsBeginPDFPageWithInfo(CGRect(x: 0.0, y: 0.0, width: printablePageDetails.width, height: printablePageDetails.height), nil)
                 printJobDetails.currentPage += 1
                 printJobDetails.currentPosition = printJobDetails.pageOrigin
                 printJobDetails.currentRowPosition = printJobDetails.rowOrigin
@@ -354,7 +354,7 @@ class MWTPrintModule: NSObject {
                     } catch MWTPrintModuleError.DelegateIsMissing {
                         throw MWTPrintModuleError.DelegateIsMissing
                         
-                    } catch let error1 {
+                    } catch _ {
                         throw MWTPrintModuleError.GenericError
                     }
                 }
@@ -362,7 +362,7 @@ class MWTPrintModule: NSObject {
             
             // Draw single table row here
             if let headerItems = self.tableHeaderTitles {
-                self.delegate?.drawTableItemRow(self, rowHeight: currentCellHeight, rowData: singleRow, headerItems: headerItems, pageSize: printablePageDetails, columnSpacing: currentColumnSpacing)
+                self.delegate?.drawTableItemRow(printModule: self, rowHeight: currentCellHeight, rowData: singleRow, headerItems: headerItems, pageSize: printablePageDetails, columnSpacing: currentColumnSpacing)
             }
             
             // Reset row origin position and update vertical position (CR,LF)

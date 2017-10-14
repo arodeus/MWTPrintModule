@@ -14,7 +14,7 @@ let kTableHeaderTitles = ["Product name", "Vendor name", "Discount", "Discounted
 
 // MARK: - MWTPrintModuleError struct
 
-enum MWTPrintOrderPreviewError: ErrorType {
+enum MWTPrintOrderPreviewError: Error {
     case DataNotFound
     case FileSystemError
     case PDFContextOpeningError
@@ -27,14 +27,14 @@ class MWTPrintOrderPreview: NSObject, MWTPrintModuleDelegate, MWTPrintModuleData
     
     func printOrderWithSessionId(orderRowsData: Array<Dictionary<String,String>>?, withFileName pdfName: String) throws -> String? {
     	// Return if no data: I want to print an order summary, I need order rows
-    	guard orderRowData != nil else { throw MWTPrintOrderPreviewError.DataNotFound }
+        guard orderRowsData != nil else { throw MWTPrintOrderPreviewError.DataNotFound }
     	
-        let documentDir = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.ApplicationSupportDirectory, .UserDomainMask, true)[0] + "/GeneratedPDF/"
-        let fm = NSFileManager()
+        let documentDir = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.applicationSupportDirectory, .userDomainMask, true)[0] + "/GeneratedPDF/"
+        let fm = FileManager.default
         
-        if !fm.fileExistsAtPath(documentDir) {
+        if !fm.fileExists(atPath: documentDir) {
             do {
-                try fm.createDirectoryAtPath(documentDir, withIntermediateDirectories: true, attributes: nil)
+                try fm.createDirectory(atPath: documentDir, withIntermediateDirectories: true, attributes: nil)
             } catch let error1 {
                 print("Error creating folder structure")
                 print(error1)
@@ -48,14 +48,14 @@ class MWTPrintOrderPreview: NSObject, MWTPrintModuleDelegate, MWTPrintModuleData
 	// Enable datasource to customize cell height, header height, spacing
 	printContext.datasource = self
 	
-	self.filePath = documentDir + orderObj.orderSessionId + dateAsString + ".pdf"
-	if fm.fileExistsAtPath(filePath) {
+	self.filePath = "" // documentDir + orderObj.orderSessionId + dateAsString + ".pdf"
+    if fm.fileExists(atPath: filePath) {
 		return filePath
 	}
 	
 	do {
 		// Open PDF context to file
-		let contextOpened = try printContext.beginContextWithFileName(filePath)
+        let contextOpened = try printContext.beginContextWithFileName(fileName: filePath)
 		if !contextOpened {
 			throw MWTPrintOrderPreviewError.PDFContextOpeningError
 		}
@@ -65,26 +65,29 @@ class MWTPrintOrderPreview: NSObject, MWTPrintModuleDelegate, MWTPrintModuleData
 	
 	do {
 		// Set table header fields
-		printContext.setCustomTableHeaderTitles(kTableHeaderTitles)
+        printContext.setCustomTableHeaderTitles(headerTitles: kTableHeaderTitles)
 		
 		// Table header should be present on each table page
-		printContext.toggleTableHeaderShouldShowInEveyPage(true)
+        printContext.toggleTableHeaderShouldShowInEveyPage(toggleHeader: true)
 		
 		// Draw front page): if you use it, you must implement related protocol function
-		try printContext.drawFrontPage(false)
+        try printContext.drawFrontPage(compact: false)
 		
 		// Draw order list
-		try printContext.beginTableReport(false)
+        try printContext.beginTableReport(compact: false)
 		
 		// Process order rows to create PDF here
+        /*
 		for orderRowObject in orderRowsData! {
 			try printContext.drawReportData(rowData)
 		}
+        */
 		
 		// Draw summary page: if you use it, you must implement related protocol function
-		try printContext.drawSummaryPage(false)
+        try printContext.drawSummaryPage(compact: false)
 		
 	} catch let pdfError {
+        print(pdfError.localizedDescription)
 		self.filePath = ""
 	}
 	
